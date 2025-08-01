@@ -164,6 +164,55 @@ def test_post():
             'message': str(e)
         }), 500
 
+@app.route('/logs')
+def view_logs():
+    """查看日志文件内容 - Vercel版本"""
+    try:
+        # 获取参数
+        log_type = request.args.get('type', 'all')  # all, app, api
+        lines_count = int(request.args.get('lines', 500))
+        
+        # 限制最大行数
+        lines_count = min(lines_count, 2000)
+        
+        # 在Vercel环境中，日志主要通过标准输出
+        # 这里返回一个说明信息
+        return jsonify({
+            'success': True,
+            'logs': [
+                '[INFO] Vercel环境日志说明:',
+                '[INFO] 在Vercel Serverless环境中，应用日志主要通过以下方式查看:',
+                '[INFO] 1. Vercel Dashboard -> Functions -> View Function Logs',
+                '[INFO] 2. Vercel CLI: vercel logs [deployment-url]',
+                '[INFO] 3. 实时日志: vercel logs --follow',
+                '[INFO] ',
+                '[INFO] 当前应用运行状态: 正常',
+                '[INFO] 日志级别: INFO',
+                '[INFO] CORS: 已启用',
+                '[INFO] 可用端点: /, /api, /health, /chat, /test, /logs, /logs/view',
+                '[INFO] ',
+                '[INFO] 如需查看详细的API调用日志，请使用Vercel Dashboard或CLI工具。'
+            ],
+            'total_lines': 12,
+            'displayed_lines': 12,
+            'log_type': log_type,
+            'environment': 'vercel'
+        })
+        
+    except Exception as e:
+        return jsonify({
+            'success': False,
+            'error': str(e),
+            'logs': [f'[ERROR] 获取日志信息失败: {str(e)}'],
+            'total_lines': 0,
+            'environment': 'vercel'
+        })
+
+@app.route('/logs/view')
+def logs_page():
+    """日志查看页面"""
+    return render_template('logs.html')
+
 # Vercel expects an 'app' variable for WSGI applications
 if __name__ == '__main__':
     app.run(debug=True)
