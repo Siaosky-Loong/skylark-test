@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/hello.py": {
+    "api/wsgi.py": {
       "maxDuration": 30
     }
   },
@@ -11,7 +11,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/api/hello.py"
+      "dest": "/api/wsgi.py"
     }
   ],
   "env": {
