@@ -102,6 +102,23 @@ class APILogger:
         status = "成功" if success else "失败"
         self.app_logger.info(f"[{request_id}] 请求处理完成 ({status}), 耗时: {duration:.2f}秒")
         self.api_logger.info(f"[{request_id}] === API请求结束 ({status}) ===")
+    
+    # 添加标准logger接口方法，使其与标准logger兼容
+    def info(self, message: str):
+        """记录信息级别日志"""
+        self.app_logger.info(message)
+    
+    def error(self, message: str):
+        """记录错误级别日志"""
+        self.app_logger.error(message)
+    
+    def warning(self, message: str):
+        """记录警告级别日志"""
+        self.app_logger.warning(message)
+    
+    def debug(self, message: str):
+        """记录调试级别日志"""
+        self.app_logger.debug(message)
 
 def generate_request_id() -> str:
     """生成请求ID"""
