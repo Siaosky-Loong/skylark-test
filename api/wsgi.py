@@ -74,10 +74,16 @@ def chat():
     
     try:
         logger.info(f"[{request_id}] 收到聊天请求")
+        logger.debug(f"[{request_id}] 请求开始时间: {start_time}")
+        logger.debug(f"[{request_id}] 请求方法: {request.method}")
+        logger.debug(f"[{request_id}] 请求头: {dict(request.headers)}")
         
         # 获取请求数据
         data = request.get_json()
+        logger.debug(f"[{request_id}] 原始请求数据: {data}")
+        
         if not data:
+            logger.debug(f"[{request_id}] 请求体为空，返回400错误")
             return jsonify({
                 'error': '请求体不能为空',
                 'status': 'error'
@@ -98,18 +104,27 @@ def chat():
         model_id = data.get('model_id', 'skylark-pro-sc-250615')
         messages = data.get('messages', [])
         
+        logger.debug(f"[{request_id}] 提取的参数:")
+        logger.debug(f"[{request_id}] - API密钥长度: {len(api_key) if api_key else 0}")
+        logger.debug(f"[{request_id}] - 基础URL: {base_url}")
+        logger.debug(f"[{request_id}] - 模型ID: {model_id}")
+        logger.debug(f"[{request_id}] - 消息数量: {len(messages)}")
+        
         if not api_key or not base_url:
+            logger.debug(f"[{request_id}] 缺少必需参数，返回400错误")
             return jsonify({
                 'error': 'api_key和base_url是必需的',
                 'status': 'error'
             }), 400
         
         # 初始化服务
+        logger.debug(f"[{request_id}] 初始化ModelArkService...")
         service = ModelArkService(
             api_key=api_key,
             base_url=base_url,
             model_id=model_id
         )
+        logger.debug(f"[{request_id}] ModelArkService初始化完成")
         
         logger.info(f"[{request_id}] 开始调用API...")
         api_start_time = time.time()
