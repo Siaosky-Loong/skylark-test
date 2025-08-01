@@ -1,6 +1,6 @@
 {
   "functions": {
-    "api/handler.py": {
+    "api/hello.py": {
       "maxDuration": 30
     }
   },
@@ -11,7 +11,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/api/handler.py"
+      "dest": "/api/hello.py"
     }
   ],
   "env": {

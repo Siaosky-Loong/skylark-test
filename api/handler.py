@@ -1,83 +1,50 @@
-"""
-使用函数格式的Vercel API处理器
-"""
+from http.server import BaseHTTPRequestHandler
 import json
+import os
 
-def handler(request):
-    """
-    Vercel函数处理器
-    """
-    try:
-        # 获取请求方法和路径
-        method = request.get('method', 'GET')
-        path = request.get('path', '/')
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
         
-        # 设置响应头
-        headers = {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*',
-            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type'
+        response = {
+            'status': 'success',
+            'message': 'Vercel Python API is working',
+            'path': self.path,
+            'method': 'GET'
         }
+        self.wfile.write(json.dumps(response).encode('utf-8'))
+        return
+
+    def do_POST(self):
+        self.send_response(200)
+        self.send_header('Content-type', 'application/json')
+        self.send_header('Access-Control-Allow-Origin', '*')
+        self.end_headers()
         
-        if method == 'GET':
-            response_data = {
-                'status': 'success',
-                'message': 'Function-based Vercel API is working',
-                'method': method,
-                'path': path
-            }
-            
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps(response_data)
-            }
-            
-        elif method == 'POST':
-            # 获取请求体
-            body = request.get('body', '{}')
-            if isinstance(body, str):
-                try:
-                    data = json.loads(body)
-                except:
-                    data = {}
+        try:
+            content_length = int(self.headers.get('Content-Length', 0))
+            if content_length > 0:
+                post_data = self.rfile.read(content_length)
+                data = json.loads(post_data.decode('utf-8'))
             else:
-                data = body
+                data = {}
             
-            response_data = {
+            response = {
                 'status': 'success',
                 'message': 'POST request received',
-                'method': method,
-                'path': path,
+                'path': self.path,
+                'method': 'POST',
                 'data': data
             }
+            self.wfile.write(json.dumps(response).encode('utf-8'))
             
-            return {
-                'statusCode': 200,
-                'headers': headers,
-                'body': json.dumps(response_data)
-            }
-            
-        else:
-            return {
-                'statusCode': 405,
-                'headers': headers,
-                'body': json.dumps({
-                    'status': 'error',
-                    'message': f'Method {method} not allowed'
-                })
-            }
-            
-    except Exception as e:
-        return {
-            'statusCode': 500,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            },
-            'body': json.dumps({
+        except Exception as e:
+            error_response = {
                 'status': 'error',
-                'message': f'Internal server error: {str(e)}'
-            })
-        }
+                'message': f'Error: {str(e)}'
+            }
+            self.wfile.write(json.dumps(error_response).encode('utf-8'))
+        return
