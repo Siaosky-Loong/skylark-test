@@ -425,8 +425,9 @@ def health_check():
         'timestamp': time.time()
     })
 
-# Vercel应用入口点 - 直接导出Flask应用实例
-# Vercel会自动识别并处理Flask应用
+# Vercel应用入口点
+# 导出Flask应用实例供Vercel使用
+application = app
 
 if __name__ == '__main__':
     app.run(
