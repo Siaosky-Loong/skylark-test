@@ -107,3 +107,7 @@ def generate_request_id() -> str:
     """生成请求ID"""
     from uuid import uuid4
     return str(uuid4())[:8]
+
+def setup_logger(config):
+    """设置日志记录器"""
+    return APILogger(config)

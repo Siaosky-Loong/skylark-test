@@ -15,8 +15,8 @@ os.environ['FLASK_ENV'] = 'vercel'
 
 try:
     from config import get_config
-    from model_ark_service import ModelArkService
-    from input_validator import InputValidator
+    from services import ModelArkService
+    from validators import InputValidator
     from logger_utils_vercel import setup_logger, generate_request_id
 except ImportError as e:
     print(f"导入错误: {e}")
@@ -425,8 +425,8 @@ def health_check():
         'timestamp': time.time()
     })
 
-# Vercel会自动识别名为'app'的Flask应用实例
-# 不需要额外的handler函数
+# Vercel需要的应用入口点
+# 直接导出Flask应用实例，Vercel会自动处理WSGI
 
 if __name__ == '__main__':
     app.run(
