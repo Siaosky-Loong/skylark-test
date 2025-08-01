@@ -564,28 +564,44 @@ async function startBatchRequest() {
         clearTimeout(timeoutId);
         
         if (response.ok) {
-            showBatchStatus('批量请求完成，正在下载结果文件...');
+            showBatchStatus('批量请求完成，正在处理结果...');
             
-            // 处理Excel文件下载
-            const blob = await response.blob();
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.style.display = 'none';
-            a.href = url;
-            a.download = `batch_results_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.xlsx`;
-            document.body.appendChild(a);
-            a.click();
-            window.URL.revokeObjectURL(url);
-            document.body.removeChild(a);
+            // 处理JSON响应（包含Base64编码的Excel数据）
+            const responseData = await response.json();
             
-            // 显示完成状态
-            updateProgress(batchCount, batchCount, batchCount, 0);
-            showBatchComplete(batchCount, batchCount, 0, 0);
-            showBatchStatus('批量请求已完成，结果文件已下载');
-            
-            // 显示结果区域
-            batchResults.style.display = 'block';
-            document.getElementById('download-btn').style.display = 'none'; // 隐藏下载按钮，因为文件已经下载
+            if (responseData.success && responseData.excel_data) {
+                // 将Base64数据转换为Blob
+                const binaryString = atob(responseData.excel_data);
+                const bytes = new Uint8Array(binaryString.length);
+                for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                }
+                const blob = new Blob([bytes], { 
+                    type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+                });
+                
+                // 创建下载链接
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.style.display = 'none';
+                a.href = url;
+                a.download = responseData.filename || `batch_results_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.xlsx`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+                
+                // 显示完成状态
+                updateProgress(batchCount, batchCount, batchCount, 0);
+                showBatchComplete(batchCount, batchCount, 0, responseData.total_duration || 0);
+                showBatchStatus('批量请求已完成，结果文件已下载');
+                
+                // 显示结果区域
+                batchResults.style.display = 'block';
+                document.getElementById('download-btn').style.display = 'none'; // 隐藏下载按钮，因为文件已经下载
+            } else {
+                showError(responseData.error || '批量请求处理失败');
+            }
         } else {
             const errorData = await response.json();
             showError(errorData.error || '批量请求失败');

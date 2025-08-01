@@ -1,5 +1,5 @@
 """
-应用配置文件
+Vercel部署配置文件
 """
 import os
 from dotenv import load_dotenv
@@ -7,6 +7,54 @@ from dotenv import load_dotenv
 # 加载环境变量
 load_dotenv()
 
+class VercelConfig:
+    """Vercel部署配置类"""
+    
+    # Flask配置
+    SECRET_KEY = os.environ.get('SECRET_KEY') or 'vercel-secret-key-change-in-production'
+    DEBUG = False  # Vercel生产环境
+    HOST = '0.0.0.0'
+    PORT = 3000  # Vercel默认端口
+    
+    # BytePlus ModelArk配置
+    ARK_API_KEY = os.environ.get('ARK_API_KEY')
+    ARK_BASE_URL = os.environ.get('ARK_BASE_URL', 'https://ark.cn-beijing.volces.com/api/v3')
+    
+    # 模型默认参数
+    DEFAULT_TEMPERATURE = float(os.environ.get('DEFAULT_TEMPERATURE', 1.0))
+    DEFAULT_MAX_TOKENS = int(os.environ.get('DEFAULT_MAX_TOKENS', 1000))
+    DEFAULT_TOP_P = float(os.environ.get('DEFAULT_TOP_P', 0.7))
+    DEFAULT_FREQUENCY_PENALTY = float(os.environ.get('DEFAULT_FREQUENCY_PENALTY', 0.1))
+    DEFAULT_PRESENCE_PENALTY = float(os.environ.get('DEFAULT_PRESENCE_PENALTY', 0.1))
+    
+    # Logit Bias配置
+    DEFAULT_LOGIT_BIAS = {
+        "861": -100,
+        "854": -100,
+        "135": -100,
+        "136": -100
+    }
+    
+    # 从环境变量读取logit_bias配置
+    try:
+        import json
+        logit_bias_env = os.environ.get('LOGIT_BIAS_JSON')
+        if logit_bias_env:
+            LOGIT_BIAS = json.loads(logit_bias_env)
+        else:
+            LOGIT_BIAS = DEFAULT_LOGIT_BIAS
+    except (json.JSONDecodeError, ValueError) as e:
+        print(f"警告: LOGIT_BIAS_JSON环境变量格式错误，使用默认值: {e}")
+        LOGIT_BIAS = DEFAULT_LOGIT_BIAS
+    
+    # 日志配置 - Vercel环境下禁用文件日志
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO')
+    LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    LOG_FILE = None  # Vercel不支持文件系统写入
+    LOG_MAX_BYTES = 0
+    LOG_BACKUP_COUNT = 0
+
+# 原始配置类保持不变
 class Config:
     """基础配置类"""
     
@@ -74,6 +122,7 @@ config = {
     'development': DevelopmentConfig,
     'production': ProductionConfig,
     'testing': TestingConfig,
+    'vercel': VercelConfig,
     'default': DevelopmentConfig
 }
 
