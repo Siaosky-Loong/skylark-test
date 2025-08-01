@@ -1,3 +1,6 @@
+"""
+Vercel部署的Flask应用入口文件
+"""
 import os
 import time
 import asyncio
@@ -7,13 +10,17 @@ from flask_cors import CORS
 import pandas as pd
 from io import BytesIO
 
-# 设置Vercel环境
+# 设置Vercel环境变量 - 必须在导入config之前设置
 os.environ['FLASK_ENV'] = 'vercel'
 
-from config import get_config
-from services import ModelArkService
-from validators import InputValidator
-from logger_utils_vercel import generate_request_id
+try:
+    from config import get_config
+    from model_ark_service import ModelArkService
+    from input_validator import InputValidator
+    from logger_utils_vercel import setup_logger, generate_request_id
+except ImportError as e:
+    print(f"导入错误: {e}")
+    raise
 
 # 获取配置
 config = get_config()
@@ -22,6 +29,23 @@ config = get_config()
 app = Flask(__name__)
 app.config.from_object(config)
 CORS(app)
+
+# 全局错误处理器
+@app.errorhandler(500)
+def internal_error(error):
+    return jsonify({
+        'success': False,
+        'error': 'Internal server error',
+        'details': str(error)
+    }), 500
+
+@app.errorhandler(Exception)
+def handle_exception(e):
+    return jsonify({
+        'success': False,
+        'error': 'Unexpected error',
+        'details': str(e)
+    }), 500
 
 @app.route('/')
 def index():
@@ -401,9 +425,8 @@ def health_check():
         'timestamp': time.time()
     })
 
-# Vercel需要的handler
-def handler(request):
-    return app(request.environ, lambda status, headers: None)
+# Vercel会自动识别名为'app'的Flask应用实例
+# 不需要额外的handler函数
 
 if __name__ == '__main__':
     app.run(

@@ -4,8 +4,9 @@ Vercel部署配置文件
 import os
 from dotenv import load_dotenv
 
-# 加载环境变量
-load_dotenv()
+# 加载环境变量 - 在Vercel环境中跳过
+if os.environ.get('FLASK_ENV') != 'vercel':
+    load_dotenv()
 
 class VercelConfig:
     """Vercel部署配置类"""
