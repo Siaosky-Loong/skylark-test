@@ -123,7 +123,7 @@ def chat():
         service = ModelArkService(
             api_key=api_key,
             base_url=base_url,
-            model_id=model_id
+            request_id=request_id
         )
         logger.debug(f"[{request_id}] ModelArkService初始化完成")
         
@@ -131,7 +131,8 @@ def chat():
         api_start_time = time.time()
         
         # 调用API
-        response = service.chat_completion(
+        response = service.create_chat_completion(
+            model=model_id,
             messages=messages,
             **{k: v for k, v in data.items() if k not in ['api_key', 'base_url', 'model_id', 'messages']}
         )
