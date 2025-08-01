@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>日志查看器</title>
+    <style>
+        body {
+            font-family: 'Courier New', monospace;
+            margin: 20px;
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        .header {
+            background-color: #2d2d30;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .control-group {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .control-group label {
+            font-size: 12px;
+            color: #cccccc;
+        }
+        select, input {
+            background-color: #3e3e42;
+            color: #d4d4d4;
+            border: 1px solid #5a5a5a;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        .log-container {
+            background-color: #2d2d30;
+            border-radius: 8px;
+            padding: 20px;
+            max-height: 700px;
+            overflow-y: auto;
+            border: 1px solid #3e3e42;
+        }
+        .log-line {
+            margin: 2px 0;
+            padding: 2px 0;
+            font-size: 11px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+        .log-line.json-start {
+            background-color: #2a4a2a;
+            padding: 5px;
+            border-left: 3px solid #4fc1ff;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+        .log-line.json-content {
+            background-color: #2a2a3a;
+            padding: 2px 10px;
+            margin-left: 10px;
+            border-left: 1px solid #4fc1ff;
+            font-family: 'Monaco', 'Menlo', monospace;
+            white-space: pre-wrap;
+        }
+        .log-line.json-end {
+            background-color: #2a4a2a;
+            padding: 5px;
+            border-left: 3px solid #4fc1ff;
+            margin: 5px 0;
+            font-weight: bold;
+        }
+        .log-info { color: #4fc1ff; }
+        .log-warning { color: #ffcc02; }
+        .log-error { color: #f14c4c; }
+        .log-debug { color: #b5cea8; }
+        .log-api { color: #ff9500; }
+        .refresh-btn {
+            background-color: #0e639c;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .refresh-btn:hover {
+            background-color: #1177bb;
+        }
+        .stats {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .stat-item {
+            background-color: #3e3e42;
+            padding: 8px 12px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 11px;
+        }
+        .search-box {
+            background-color: #3e3e42;
+            color: #d4d4d4;
+            border: 1px solid #5a5a5a;
+            padding: 5px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            width: 200px;
+        }
+        .highlight {
+            background-color: #ffff00;
+            color: #000000;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔍 应用日志查看器</h1>
+            <p>实时查看应用和API调用日志，支持JSON格式化显示</p>
+            
+            <div class="controls">
+                <button class="refresh-btn" onclick="loadLogs()">🔄 刷新日志</button>
+                
+                <div class="control-group">
+                    <label>日志类型:</label>
+                    <select id="logType">
+                        <option value="all">全部日志</option>
+                        <option value="api">API调用日志</option>
+                        <option value="app">应用日志</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>显示行数:</label>
+                    <select id="linesCount">
+                        <option value="200">200行</option>
+                        <option value="500" selected>500行</option>
+                        <option value="1000">1000行</option>
+                        <option value="2000">2000行</option>
+                    </select>
+                </div>
+                
+                <div class="control-group">
+                    <label>搜索:</label>
+                    <input type="text" id="searchBox" class="search-box" placeholder="搜索日志内容..." onkeyup="filterLogs()">
+                </div>
+                
+                <div class="control-group">
+                    <input type="checkbox" id="autoRefresh" checked>
+                    <label>自动刷新(30秒)</label>
+                </div>
+            </div>
+            
+            <div class="stats">
+                <div class="stat-item">
+                    <div>总日志行数</div>
+                    <div id="totalLines">-</div>
+                </div>
+                <div class="stat-item">
+                    <div>显示行数</div>
+                    <div id="displayLines">-</div>
+                </div>
+                <div class="stat-item">
+                    <div>过滤后行数</div>
+                    <div id="filteredLines">-</div>
+                </div>
+                <div class="stat-item">
+                    <div>最后更新</div>
+                    <div id="lastUpdate">-</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="log-container" id="logContainer">
+            <div class="log-line">正在加载日志...</div>
+        </div>
+    </div>
+
+    <script>
+        let allLogs = [];
+        let autoRefreshInterval;
+        
+        function loadLogs() {
+            const logType = document.getElementById('logType').value;
+            const linesCount = document.getElementById('linesCount').value;
+            
+            fetch(`/logs?type=${logType}&lines=${linesCount}`)
+                .then(response => response.json())
+                .then(data => {
+                    const container = document.getElementById('logContainer');
+                    const totalLinesEl = document.getElementById('totalLines');
+                    const displayLinesEl = document.getElementById('displayLines');
+                    const lastUpdateEl = document.getElementById('lastUpdate');
+                    
+                    if (data.success) {
+                        allLogs = data.logs;
+                        displayLogs(allLogs);
+                        
+                        // 更新统计信息
+                        totalLinesEl.textContent = data.total_lines;
+                        displayLinesEl.textContent = data.logs.length;
+                        lastUpdateEl.textContent = new Date().toLocaleTimeString();
+                    } else {
+                        container.innerHTML = `<div class="log-line log-error">加载日志失败: ${data.error}</div>`;
+                    }
+                })
+                .catch(error => {
+                    const container = document.getElementById('logContainer');
+                    container.innerHTML = `<div class="log-line log-error">请求失败: ${error.message}</div>`;
+                });
+        }
+        
+        function displayLogs(logs) {
+            const container = document.getElementById('logContainer');
+            container.innerHTML = '';
+            
+            logs.forEach(line => {
+                const div = document.createElement('div');
+                div.className = 'log-line';
+                
+                // 检查是否是JSON相关的日志行
+                if (line.includes('=== 完整请求参数JSON ===') || line.includes('=== 完整响应JSON ===')) {
+                    div.className += ' json-start';
+                } else if (line.includes('=== 完整请求参数JSON结束 ===') || line.includes('=== 完整响应JSON结束 ===')) {
+                    div.className += ' json-end';
+                } else if (isJSONContent(line)) {
+                    div.className += ' json-content';
+                    // 尝试格式化JSON
+                    const formattedJSON = formatJSONInLine(line);
+                    div.innerHTML = formattedJSON;
+                    container.appendChild(div);
+                    return;
+                }
+                
+                // 根据日志级别设置颜色
+                if (line.includes(' - INFO - ')) {
+                    div.className += ' log-info';
+                } else if (line.includes(' - WARNING - ')) {
+                    div.className += ' log-warning';
+                } else if (line.includes(' - ERROR - ')) {
+                    div.className += ' log-error';
+                } else if (line.includes(' - DEBUG - ')) {
+                    div.className += ' log-debug';
+                } else if (line.includes('api_calls')) {
+                    div.className += ' log-api';
+                }
+                
+                div.textContent = line.trim();
+                container.appendChild(div);
+            });
+            
+            // 滚动到底部
+            container.scrollTop = container.scrollHeight;
+        }
+        
+        function isJSONContent(line) {
+            // 检查是否是JSON内容行（包含JSON结构）
+            const trimmed = line.trim();
+            return (trimmed.includes('{') || trimmed.includes('}') || trimmed.includes('[') || trimmed.includes(']')) &&
+                   (trimmed.includes('"') || trimmed.includes(':')) &&
+                   !line.includes('=== ');
+        }
+        
+        function formatJSONInLine(line) {
+            try {
+                // 提取日志行中的JSON部分
+                const match = line.match(/\{.*\}|\[.*\]/);
+                if (match) {
+                    const jsonStr = match[0];
+                    const parsed = JSON.parse(jsonStr);
+                    const formatted = JSON.stringify(parsed, null, 2);
+                    
+                    // 替换原始JSON为格式化版本
+                    const prefix = line.substring(0, line.indexOf(jsonStr));
+                    return prefix + '<span style="color: #ce9178;">' + escapeHtml(formatted) + '</span>';
+                }
+            } catch (e) {
+                // 如果不是有效JSON，返回原始内容
+            }
+            return escapeHtml(line);
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function filterLogs() {
+            const searchTerm = document.getElementById('searchBox').value.toLowerCase();
+            const filteredLinesEl = document.getElementById('filteredLines');
+            
+            if (!searchTerm) {
+                displayLogs(allLogs);
+                filteredLinesEl.textContent = allLogs.length;
+                return;
+            }
+            
+            const filtered = allLogs.filter(line => 
+                line.toLowerCase().includes(searchTerm)
+            );
+            
+            displayLogs(filtered);
+            filteredLinesEl.textContent = filtered.length;
+            
+            // 高亮搜索词
+            highlightSearchTerm(searchTerm);
+        }
+        
+        function highlightSearchTerm(term) {
+            const container = document.getElementById('logContainer');
+            const lines = container.querySelectorAll('.log-line');
+            
+            lines.forEach(line => {
+                const text = line.textContent;
+                if (text.toLowerCase().includes(term)) {
+                    const regex = new RegExp(`(${term})`, 'gi');
+                    line.innerHTML = text.replace(regex, '<span class="highlight">$1</span>');
+                }
+            });
+        }
+        
+        function setupAutoRefresh() {
+            const autoRefreshCheckbox = document.getElementById('autoRefresh');
+            
+            if (autoRefreshCheckbox.checked) {
+                autoRefreshInterval = setInterval(loadLogs, 30000);
+            } else {
+                if (autoRefreshInterval) {
+                    clearInterval(autoRefreshInterval);
+                }
+            }
+        }
+        
+        // 页面加载时自动加载日志
+        window.onload = function() {
+            loadLogs();
+            setupAutoRefresh();
+            
+            // 监听控件变化
+            document.getElementById('logType').addEventListener('change', loadLogs);
+            document.getElementById('linesCount').addEventListener('change', loadLogs);
+            document.getElementById('autoRefresh').addEventListener('change', setupAutoRefresh);
+        };
+    </script>
+</body>
+</html>

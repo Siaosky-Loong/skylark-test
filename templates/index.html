@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BytePlus ModelArk Chat Demo</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>BytePlus ModelArk Chat Demo</h1>
+            <p>基于BytePlus ModelArk API的聊天演示</p>
+        </header>
+
+        <main>
+            <div class="config-section">
+                <div class="input-group">
+                    <label for="api-key">API 密钥:</label>
+                    <input type="password" id="api-key" placeholder="请输入您的BytePlus ModelArk API密钥" required>
+                    <small>您的API密钥将安全存储在浏览器本地，不会发送到服务器日志</small>
+                </div>
+                
+                <div class="input-group">
+                    <label for="base-url">模型请求地址:</label>
+                    <input type="text" id="base-url" placeholder="请输入API基础URL，例如：https://ark.cn-beijing.volces.com/api/v3" required>
+                    <small>BytePlus ModelArk API的基础URL地址</small>
+                </div>
+                
+                <div class="input-group">
+                    <label for="model-endpoint">模型端点 ID:</label>
+                    <input type="text" id="model-endpoint" placeholder="请输入您的模型端点ID" required>
+                    <small>请在BytePlus控制台获取您的端点ID</small>
+                </div>
+                
+                <div class="input-group">
+                    <label for="model-id">模型 ID (可选):</label>
+                    <input type="text" id="model-id" placeholder="请输入模型ID，如不填写则使用端点ID">
+                    <small>如果填写，将使用此模型ID替代端点ID作为model参数</small>
+                </div>
+                
+                <div class="input-group">
+                    <label for="logit-bias">Logit Bias (可选):</label>
+                    <textarea id="logit-bias" placeholder='输入JSON格式的logit_bias，例如：{"861": -100, "854": -100}' rows="2"></textarea>
+                    <small>用于控制特定token的生成概率，JSON格式：{"token_id": bias_value}</small>
+                </div>
+            </div>
+
+            <div class="chat-section">
+                <div class="conversation-config">
+                    <h3>对话配置</h3>
+                    <div class="input-group">
+                        <label>
+                            <input type="checkbox" id="multi-turn-enabled" onchange="toggleMultiTurn()">
+                            启用多轮对话
+                        </label>
+                        <small>启用后将保持对话上下文，支持连续对话</small>
+                    </div>
+                    
+                    <div class="input-group" id="context-config" style="display: none;">
+                        <label for="context-rounds">上下文记忆轮次:</label>
+                        <input type="number" id="context-rounds" min="1" max="20" value="5" placeholder="输入保留的对话轮次">
+                        <small>设置保留多少轮对话作为上下文（包括用户和助手的消息）</small>
+                    </div>
+                    
+                    <div class="button-group" id="conversation-controls" style="display: none;">
+                        <button id="clear-history-btn" onclick="clearConversationHistory()">清空对话历史</button>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label for="system-input">System 消息 (可选):</label>
+                    <textarea id="system-input" placeholder="输入系统指令，例如：你是一个有用的AI助手..." rows="3"></textarea>
+                </div>
+
+                <div class="input-group">
+                    <label for="user-input">User 消息:</label>
+                    <textarea id="user-input" placeholder="输入您的问题或消息..." rows="4" required></textarea>
+                </div>
+
+                <div class="button-group">
+                    <button id="send-btn" onclick="sendMessage()">
+                        <span id="btn-text">发送消息</span>
+                        <span id="loading-spinner" class="spinner" style="display: none;"></span>
+                    </button>
+                    <button id="clear-btn" onclick="clearInputs()">清空输入</button>
+                </div>
+            </div>
+
+            <div class="conversation-history" id="conversation-history" style="display: none;">
+                <h3>对话历史</h3>
+                <div id="history-container">
+                    <!-- 对话历史将在这里显示 -->
+                </div>
+            </div>
+
+            <div class="batch-section">
+                <h3>批量请求</h3>
+                <div class="batch-config">
+                    <div class="input-group">
+                        <label for="batch-count">请求次数:</label>
+                        <input type="number" id="batch-count" min="1" value="5" placeholder="输入批量请求次数 (最少1次)">
+                        <small>请根据实际需要设置，注意API配额限制</small>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label for="batch-concurrency">并发数:</label>
+                        <input type="number" id="batch-concurrency" min="1" value="3" placeholder="输入并发请求数 (最少1个)">
+                        <small>请根据API限制合理设置，建议不超过10个</small>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button id="batch-btn" onclick="startBatchRequest()">
+                        <span id="batch-btn-text">开始批量请求</span>
+                        <span id="batch-loading-spinner" class="spinner" style="display: none;"></span>
+                    </button>
+                    <button id="cancel-batch-btn" onclick="cancelBatchRequest()" style="display: none; background-color: #dc3545;">
+                        取消请求
+                    </button>
+                </div>
+
+                <div id="batch-status" style="display: none; margin: 10px 0; padding: 10px; background-color: #e3f2fd; border-radius: 4px; color: #1976d2;">
+                    <!-- 状态信息将在这里显示 -->
+                </div>
+
+                <div id="batch-progress" style="display: none;">
+                    <div class="progress-info">
+                        <span>进度: <span id="progress-text">0/0</span></span>
+                        <span>成功: <span id="success-count">0</span></span>
+                        <span>失败: <span id="error-count">0</span></span>
+                    </div>
+                    <div class="progress-bar">
+                        <div id="progress-fill"></div>
+                    </div>
+                </div>
+
+                <div id="batch-results" style="display: none;">
+                    <h4>批量请求结果</h4>
+                    <div class="results-summary">
+                        <span>总请求数: <span id="total-requests">0</span></span>
+                        <span>成功数: <span id="final-success-count">0</span></span>
+                        <span>失败数: <span id="final-error-count">0</span></span>
+                        <span>总耗时: <span id="total-duration">0</span>ms</span>
+                    </div>
+                    <button id="download-btn" style="display: none;">
+                        Excel文件已自动下载
+                    </button>
+                </div>
+            </div>
+
+            <div class="response-section">
+                <h3>模型响应:</h3>
+                <div id="response-container">
+                    <div id="response-content">
+                        <p class="placeholder">点击"发送消息"按钮开始对话...</p>
+                    </div>
+                </div>
+                
+                <div id="usage-info" style="display: none;">
+                    <h4>Token 使用情况:</h4>
+                    <div class="usage-stats">
+                        <span>输入: <span id="prompt-tokens">0</span> tokens</span>
+                        <span>输出: <span id="completion-tokens">0</span> tokens</span>
+                        <span>总计: <span id="total-tokens">0</span> tokens</span>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>默认配置参数: temperature=0.7, top_p=0.9, logit_bias={"861": -100, "854": -100, "135": -100, "136": -100}</p>
+            <p><small>您可以在上方输入框中自定义logit_bias配置</small></p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
