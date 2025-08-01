@@ -3,11 +3,12 @@ import sys
 import time
 import json
 import uuid
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 
 # 添加项目根目录到Python路径
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, project_root)
 
 try:
     from services import ModelArkService
@@ -38,11 +39,20 @@ except ImportError as e:
     logging.basicConfig(level=logging.INFO)
     logger = logging.getLogger('vercel_api')
 
-app = Flask(__name__)
+# 配置Flask应用，指定模板和静态文件目录
+app = Flask(__name__, 
+           template_folder=os.path.join(project_root, 'templates'),
+           static_folder=os.path.join(project_root, 'static'))
 CORS(app)
 
 @app.route('/', methods=['GET'])
-def hello():
+def index():
+    """渲染聊天界面"""
+    return render_template('index.html')
+
+@app.route('/api', methods=['GET'])
+def api_status():
+    """API状态检查"""
     return jsonify({
         'status': 'success',
         'message': 'WSGI Flask API is working',
