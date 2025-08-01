@@ -425,8 +425,8 @@ def health_check():
         'timestamp': time.time()
     })
 
-# Vercel需要的应用入口点
-# 直接导出Flask应用实例，Vercel会自动处理WSGI
+# Vercel应用入口点 - 直接导出Flask应用实例
+# Vercel会自动识别并处理Flask应用
 
 if __name__ == '__main__':
     app.run(
