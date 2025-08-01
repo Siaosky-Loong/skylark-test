@@ -131,11 +131,18 @@ def chat():
         api_start_time = time.time()
         
         # 调用API
-        response = service.create_chat_completion(
-            model=model_id,
-            messages=messages,
-            **{k: v for k, v in data.items() if k not in ['api_key', 'base_url', 'model_id', 'messages']}
-        )
+        logit_bias = data.get('logit_bias')
+        if logit_bias is not None:
+            response = service.create_chat_completion(
+                model=model_id,
+                messages=messages,
+                logit_bias=logit_bias
+            )
+        else:
+            response = service.create_chat_completion(
+                model=model_id,
+                messages=messages
+            )
         
         api_end_time = time.time()
         total_time = api_end_time - start_time
