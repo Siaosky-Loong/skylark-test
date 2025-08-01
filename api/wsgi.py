@@ -85,8 +85,8 @@ def chat():
         if not data:
             logger.debug(f"[{request_id}] 请求体为空，返回400错误")
             return jsonify({
-                'error': '请求体不能为空',
-                'status': 'error'
+                'success': False,
+                'error': '请求体不能为空'
             }), 400
         
         # 验证输入
@@ -95,8 +95,8 @@ def chat():
             error_msg = '; '.join(validation_errors)
             logger.warning(f"[{request_id}] 输入验证失败: {error_msg}")
             return jsonify({
-                'error': error_msg,
-                'status': 'error'
+                'success': False,
+                'error': error_msg
             }), 400
         
         # 提取参数
@@ -114,8 +114,8 @@ def chat():
         if not api_key or not base_url:
             logger.debug(f"[{request_id}] 缺少必需参数，返回400错误")
             return jsonify({
-                'error': 'api_key和base_url是必需的',
-                'status': 'error'
+                'success': False,
+                'error': 'api_key和base_url是必需的'
             }), 400
         
         # 初始化服务
@@ -152,9 +152,30 @@ def chat():
         logger.info(f"[{request_id}] 总耗时: {total_time:.2f}秒")
         logger.info(f"[{request_id}] API耗时: {api_time:.2f}秒")
         
+        # 提取响应内容和使用情况
+        response_content = ""
+        usage_info = None
+        
+        if isinstance(response, dict):
+            # 如果response是字典，提取content和usage
+            if 'choices' in response and len(response['choices']) > 0:
+                response_content = response['choices'][0].get('message', {}).get('content', '')
+            elif 'content' in response:
+                response_content = response['content']
+            else:
+                response_content = str(response)
+            
+            # 提取usage信息
+            if 'usage' in response:
+                usage_info = response['usage']
+        else:
+            # 如果response是字符串，直接使用
+            response_content = str(response)
+        
         return jsonify({
-            'status': 'success',
-            'data': response,
+            'success': True,
+            'response': response_content,
+            'usage': usage_info,
             'request_id': request_id,
             'processing_time': {
                 'total': round(total_time, 2),
@@ -167,8 +188,8 @@ def chat():
         logger.error(f"[{request_id}] 处理请求时发生错误: {str(e)}")
         
         return jsonify({
+            'success': False,
             'error': f'处理请求时发生错误: {str(e)}',
-            'status': 'error',
             'request_id': request_id,
             'processing_time': round(error_time, 2)
         }), 500
