@@ -12,7 +12,13 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 try:
     from services import ModelArkService
     from validators import InputValidator
+    from config import VercelConfig
     from logger_utils_vercel import setup_logger
+    
+    # 创建Vercel配置对象
+    config = VercelConfig()
+    logger = setup_logger(config)
+    
 except ImportError as e:
     print(f"Import error: {e}")
     # 如果导入失败，创建简单的替代类
@@ -27,15 +33,13 @@ except ImportError as e:
         def validate_chat_request(data):
             return True, None
     
-    def setup_logger(name):
-        import logging
-        return logging.getLogger(name)
+    # 简单的日志设置
+    import logging
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger('vercel_api')
 
 app = Flask(__name__)
 CORS(app)
-
-# 设置日志
-logger = setup_logger('vercel_api')
 
 @app.route('/', methods=['GET'])
 def hello():
