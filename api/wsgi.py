@@ -90,8 +90,9 @@ def chat():
             }), 400
         
         # 验证输入
-        is_valid, error_msg = InputValidator.validate_chat_request(data)
-        if not is_valid:
+        validation_errors = InputValidator.validate_chat_request(data)
+        if validation_errors:
+            error_msg = '; '.join(validation_errors)
             logger.warning(f"[{request_id}] 输入验证失败: {error_msg}")
             return jsonify({
                 'error': error_msg,
