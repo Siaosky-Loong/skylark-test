@@ -96,12 +96,12 @@ function toggleMultiTurn() {
         contextConfig.style.display = 'block';
         conversationControls.style.display = 'block';
         conversationHistory.style.display = 'block';
+        // 立即更新历史记录显示
+        updateHistoryDisplay();
     } else {
         contextConfig.style.display = 'none';
         conversationControls.style.display = 'none';
         conversationHistory.style.display = 'none';
-        // 清空对话历史
-        clearConversationHistory();
     }
 }
 
@@ -124,18 +124,23 @@ function addToHistory(role, content, timestamp = null) {
     conversationHistory.push(message);
     
     // 限制历史记录长度（保留最近的轮次）
-    // 每轮对话包含用户消息和助手回复，所以实际消息数是轮次的2倍
-    const maxMessages = contextRounds * 2;
+    // 注意：这里按消息对计算，一轮对话包含用户消息和助手回复
+    const maxMessages = contextRounds * 2; // 用户+助手消息对
     if (conversationHistory.length > maxMessages) {
         conversationHistory = conversationHistory.slice(-maxMessages);
     }
     
+    // 立即更新历史记录显示
     updateHistoryDisplay();
 }
 
 // 更新历史记录显示
 function updateHistoryDisplay() {
     const historyContainer = document.getElementById('history-container');
+    
+    if (!isMultiTurnEnabled) {
+        return;
+    }
     
     if (conversationHistory.length === 0) {
         historyContainer.innerHTML = '<div style="padding: 20px; text-align: center; color: #999;">暂无对话历史</div>';
@@ -150,7 +155,7 @@ function updateHistoryDisplay() {
         </div>
     `).join('');
     
-    // 滚动到底部
+    // 滚动到底部显示最新消息
     historyContainer.scrollTop = historyContainer.scrollHeight;
 }
 
@@ -164,7 +169,7 @@ function getRoleDisplayName(role) {
     return roleNames[role] || role;
 }
 
-// HTML转义函数
+// HTML转义函数，防止XSS攻击
 function escapeHtml(text) {
     const div = document.createElement('div');
     div.textContent = text;

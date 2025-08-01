@@ -14,16 +14,16 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY') or 'dev-secret-key-change-in-production'
     DEBUG = os.environ.get('FLASK_DEBUG', 'True').lower() == 'true'
     HOST = os.environ.get('FLASK_HOST', '0.0.0.0')
-    PORT = int(os.environ.get('FLASK_PORT', 8000))
+    PORT = int(os.environ.get('FLASK_PORT', 8001))
     
     # BytePlus ModelArk配置
     ARK_API_KEY = os.environ.get('ARK_API_KEY')
     ARK_BASE_URL = os.environ.get('ARK_BASE_URL', 'https://ark.cn-beijing.volces.com/api/v3')
     
     # 模型默认参数
-    DEFAULT_TEMPERATURE = float(os.environ.get('DEFAULT_TEMPERATURE', 0.7))
+    DEFAULT_TEMPERATURE = float(os.environ.get('DEFAULT_TEMPERATURE', 1.0))
     DEFAULT_MAX_TOKENS = int(os.environ.get('DEFAULT_MAX_TOKENS', 1000))
-    DEFAULT_TOP_P = float(os.environ.get('DEFAULT_TOP_P', 0.9))
+    DEFAULT_TOP_P = float(os.environ.get('DEFAULT_TOP_P', 0.7))
     DEFAULT_FREQUENCY_PENALTY = float(os.environ.get('DEFAULT_FREQUENCY_PENALTY', 0.1))
     DEFAULT_PRESENCE_PENALTY = float(os.environ.get('DEFAULT_PRESENCE_PENALTY', 0.1))
     
