@@ -147,13 +147,16 @@ function updateHistoryDisplay() {
         return;
     }
     
-    historyContainer.innerHTML = conversationHistory.map(message => `
-        <div class="history-message ${message.role}">
-            <div class="message-role">${getRoleDisplayName(message.role)}</div>
-            <div class="message-content">${escapeHtml(message.content)}</div>
-            <div class="message-timestamp">${message.timestamp}</div>
-        </div>
-    `).join('');
+    historyContainer.innerHTML = conversationHistory.map(message => {
+        const content = message.content || (message.role === 'user' ? '(空消息)' : '');
+        return `
+            <div class="history-message ${message.role}">
+                <div class="message-role">${getRoleDisplayName(message.role)}</div>
+                <div class="message-content">${escapeHtml(content)}</div>
+                <div class="message-timestamp">${message.timestamp}</div>
+            </div>
+        `;
+    }).join('');
     
     // 滚动到底部显示最新消息
     historyContainer.scrollTop = historyContainer.scrollHeight;
@@ -198,10 +201,11 @@ function buildMessagesWithHistory(systemContent, userContent) {
         })));
     }
     
-    // 添加当前用户消息
+    // 添加当前用户消息（即使为空）
+    // 空用户消息可用于测试系统消息或让模型自由发挥
     messages.push({
         role: 'user',
-        content: userContent
+        content: userContent || ''
     });
     
     return messages;
@@ -247,10 +251,7 @@ async function sendMessage() {
         return;
     }
     
-    if (!userContent) {
-        showError('请输入用户消息');
-        return;
-    }
+    // 允许空用户消息，用于测试系统消息或让模型自由发挥
     
     // 验证logit_bias格式（如果提供）
     let logitBias = null;
@@ -707,4 +708,9 @@ function cancelBatchRequest() {
         batchAbortController.abort();
         showBatchStatus('用户取消了批量请求');
     }
+}
+
+// 打开日志页面的函数
+function openLogsPage() {
+    window.open('/logs/view', '_blank');
 }

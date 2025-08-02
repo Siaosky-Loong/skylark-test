@@ -260,4 +260,4 @@ def logs_page():
 
 # Vercel expects an 'app' variable for WSGI applications
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host='0.0.0.0', port=8003)
