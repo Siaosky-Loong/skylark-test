@@ -219,16 +219,18 @@ class InputValidator:
                         if role not in ['system', 'user', 'assistant']:
                             errors.append(f"消息 {i+1} 角色无效（必须是 system、user 或 assistant）")
                         
-                        if not content or not content.strip():
-                            errors.append(f"消息 {i+1} 内容不能为空")
-                        elif len(content.strip()) > 10000:
+                        # 允许用户消息为空（用于测试系统消息或让模型自由发挥）
+                        # 但系统消息和助手消息不应为空
+                        if role in ['system', 'assistant'] and (not content or not content.strip()):
+                            errors.append(f"消息 {i+1} ({role}) 内容不能为空")
+                        elif content and len(content.strip()) > 10000:
                             errors.append(f"消息 {i+1} 内容过长（最大10000字符）")
         else:
             # 单轮对话模式：验证传统字段
+            # 允许空用户消息（用于测试系统消息或让模型自由发挥）
             user_content = data.get('user_content', '').strip()
-            is_valid, error = cls.validate_user_content(user_content)
-            if not is_valid:
-                errors.append(error)
+            if user_content and len(user_content) > 10000:
+                errors.append("用户输入内容过长（最大10000字符）")
             
             # 验证系统消息（可选）
             system_content = data.get('system_content', '').strip()
