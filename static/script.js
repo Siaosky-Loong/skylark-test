@@ -285,11 +285,6 @@ async function sendMessage() {
     responseContent.className = '';
     usageInfo.style.display = 'none';
     
-    // 如果启用多轮对话，先将用户消息添加到历史记录
-    if (isMultiTurnEnabled) {
-        addToHistory('user', userContent);
-    }
-    
     try {
         // 构建包含历史记录的消息列表
         const messages = buildMessagesWithHistory(systemContent, userContent);
@@ -323,8 +318,9 @@ async function sendMessage() {
             responseContent.textContent = data.response;
             responseContent.className = 'success';
             
-            // 如果启用多轮对话，将助手回复添加到历史记录
+            // 如果启用多轮对话，将用户消息和助手回复都添加到历史记录
             if (isMultiTurnEnabled) {
+                addToHistory('user', userContent);
                 addToHistory('assistant', data.response);
                 // 清空用户输入框，准备下一轮对话
                 document.getElementById('user-input').value = '';
